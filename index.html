@@ -392,6 +392,43 @@
   .overlook ul { margin: 0; padding-left: 18px; }
   .overlook li { font-size: .87rem; color: var(--ink-2); margin: 4px 0; }
 
+  /* quick-shot: per-field pitfall hint */
+  .qs-hint {
+    font-size: .83rem;
+    color: var(--warn);
+    margin: -2px 0 9px;
+    padding-left: 11px;
+    border-left: 2px solid var(--warn);
+  }
+  .qs-hint b {
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 600;
+    font-size: .7rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    margin-right: 6px;
+  }
+
+  /* quick-shot: pre-paste checklist in the output modal */
+  .precheck {
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    padding: 12px 16px;
+    background: var(--surface);
+  }
+  .precheck h3 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-stretch: normal;
+    font-size: .74rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--accent-ink);
+    margin-bottom: 8px;
+  }
+  .precheck ul { margin: 0; padding-left: 18px; }
+  .precheck li { font-size: .85rem; color: var(--ink-2); margin: 5px 0; }
+
   /* ---------- sticky footer ---------- */
   .footbar {
     position: fixed;
@@ -616,12 +653,14 @@
      BUILD TYPES
      ========================================================= */
   var TYPES = [
+    { id: "quickshot", label: "Quick-shot",
+      blurb: "The fastest path — a single-shot task briefed in about eight questions. Less depth of definition, but still steers the model clear of the usual pitfalls." },
     { id: "assistant", label: "Conversational assistant",
       blurb: "An ongoing chat persona — support bot, tutor, in-product copilot. You write its system prompt once; people talk to it many times." },
     { id: "agent", label: "Autonomous agent",
       blurb: "Pursues a goal over multiple steps, calls tools, and decides its own next action. Needs autonomy limits, budgets and stop conditions." },
     { id: "task", label: "Single-shot task",
-      blurb: "One input in, one output out — summarise, extract, classify, rewrite, generate. No back-and-forth, no tools." },
+      blurb: "One input in, one output out — summarise, extract, classify, rewrite, generate. No back-and-forth, no tools. The full-depth brief; pick Quick-shot for a faster pass at the same shape of job." },
     { id: "workflow", label: "Multi-step workflow",
       blurb: "A pipeline of stages, some model calls and some plain code. You are defining the model stages and how they hand off." }
   ];
@@ -647,16 +686,22 @@
       id: "foundation", title: "Foundation",
       principle: "Everything downstream is calibrated against this. If the model can't tell what “good” looks like or what's at stake, it will pick a reasonable-looking answer that may not be the one you need.",
       questions: [
-        { id: "name", w: 3, label: "Name it, in one sentence.",
+        { id: "name", w: 3, qs: true,
+          qsHint: "Skip it and the model has no anchor for scope or tone — every later line drifts. One sentence is enough.",
+          label: "Name it, in one sentence.",
           help: "A crisp identity keeps every later answer consistent — and becomes the title of the prompt.",
           ph: "“ReleaseNote Writer” — turns a list of merged pull requests into a customer-facing changelog." },
         { id: "problem", w: 3, label: "What problem does this solve, and for whom? What happens today without it?",
           help: "Stakes and status quo tell the model how much care and effort the job deserves.",
           ph: "Our developer-relations team hand-writes release notes every fortnight. It takes ~2 hours and details get missed. Readers are external developers integrating our API." },
-        { id: "success", w: 3, label: "Describe a successful result concretely. How will you check it worked?",
+        { id: "success", w: 3, qs: true,
+          qsHint: "The single biggest lever on rework. With no checkable “done”, the model ships a plausible-looking answer that may not be yours.",
+          label: "Describe a successful result concretely. How will you check it worked?",
           help: "An explicit, checkable definition of done is the biggest single reducer of iteration.",
           ph: "Lists every user-facing change, grouped as Added / Changed / Fixed, no internal ticket numbers or code names, under 200 words. I spot-check that 5 sample PRs are each represented." },
-        { id: "failure", w: 2, label: "What would make a result unacceptable or embarrassing? Name the failure modes you fear.",
+        { id: "failure", w: 2, qs: true,
+          qsHint: "“Never do X” carries as much weight as “do Y”. Name the bad outcomes and the model steers around them.",
+          label: "What would make a result unacceptable or embarrassing? Name the failure modes you fear.",
           help: "Naming anti-goals lets the model actively steer around them.",
           ph: "Inventing a change that isn't in the input. Leaking an internal service name. Burying a breaking change in the middle of a paragraph." }
       ],
@@ -713,7 +758,9 @@
         { id: "input_shape", w: 3, label: "What exactly does the model receive each time? Format, fields, typical size, how much it varies.",
           help: "Be concrete about structure and range, not just “some text”.",
           ph: "A JSON array of 5–40 objects, each { title, body, labels[], author }. Bodies range from empty to ~500 words. Occasionally the array is empty." },
-        { id: "input_examples", w: 3, label: "Paste 1–3 real examples of input (redacted if needed). Include a messy or edge-case one.",
+        { id: "input_examples", w: 3, qs: true,
+          qsHint: "One real example removes more ambiguity than a paragraph of description. A messy one is worth two clean ones.",
+          label: "Paste 1–3 real examples of input (redacted if needed). Include a messy or edge-case one.",
           help: "One concrete example resolves more ambiguity than a paragraph of rules.",
           ph: "[{\"title\":\"Add idempotency keys to /v2/orders\",\"body\":\"Clients can now pass Idempotency-Key...\",\"labels\":[\"api\",\"breaking\"],\"author\":\"pderrick\"}, {\"title\":\"chore: bump deps\",\"body\":\"\",\"labels\":[\"chore\"],\"author\":\"bot\"}]" },
         { id: "input_quality", w: 2, label: "How reliable is the input? Missing fields, wrong formats, contradictions, untrusted content?",
@@ -744,7 +791,9 @@
           help: "Prevents confident answers to the wrong question.",
           ph: "Their runtime / language, whether they're on the free or paid tier, and whether this is production or a prototype." },
         /* task */
-        { id: "transform_steps", w: 3, t: ["task"], label: "Describe the transformation step by step, as if for someone who will follow it literally.",
+        { id: "transform_steps", w: 3, t: ["task"], qs: true,
+          qsHint: "Ambiguity here becomes variance in the output. Number the steps and write for a reader who follows them literally.",
+          label: "Describe the transformation step by step, as if for someone who will follow it literally.",
           help: "Number the steps. Ambiguity here becomes variance in the output.",
           ph: "1. Drop PRs whose only labels are chore/ci/deps AND whose body has no “users”/“breaking” keyword.\n2. Classify each remaining PR as Added / Changed / Fixed from its title verb.\n3. Rewrite each as one past-tense sentence aimed at an API consumer.\n4. Sort Breaking first within each group." },
         { id: "rules_of_thumb", w: 2, t: ["task"], label: "Judgement calls the steps can't fully specify — how should it lean?",
@@ -829,10 +878,14 @@
       id: "output", title: "Output contract",
       principle: "The model will always produce some format. If you don't specify one, you're accepting whichever it happens to pick this time. Describe the shape precisely enough that two people would build the same template from it.",
       questions: [
-        { id: "format_skeleton", w: 3, label: "Specify the exact output format. Give a literal skeleton or schema.",
+        { id: "format_skeleton", w: 3, qs: true,
+          qsHint: "Leave it out and the model picks its own format — a different one each run. Paste a literal skeleton.",
+          label: "Specify the exact output format. Give a literal skeleton or schema.",
           help: "Show the structure, don't just name it.",
           ph: "## <Release version>\\n\\n### Breaking\\n- <one sentence per change>\\n\\n### Added\\n- ...\\n\\n### Fixed\\n- ...\\n\\n(omit a section entirely if it has no items; no other text before or after)" },
-        { id: "output_examples", w: 3, label: "Paste 1–2 examples of ideal output for the inputs you gave earlier.",
+        { id: "output_examples", w: 3, qs: true,
+          qsHint: "This is the target the model matches against. Without it, “right format” is guesswork.",
+          label: "Paste 1–2 examples of ideal output for the inputs you gave earlier.",
           help: "This is the target the model matches against.",
           ph: "## v2.4.0\\n\\n### Breaking\\n- The /v2/orders endpoint now requires an Idempotency-Key header; requests without one return 400.\\n\\n### Fixed\\n- Rate-limit headers are now returned on 429 responses." },
         { id: "length_detail", w: 2, label: "Target length and level of detail. What to include, what to leave out, the hard ceiling.",
@@ -856,7 +909,9 @@
         { id: "deliberation", w: 2, label: "How much deliberation does this warrant? Reason step by step? Show that reasoning or hide it?",
           help: "Match thinking to difficulty; decide if the reasoning is part of the deliverable.",
           ph: "Think through the classification of each PR internally, but output only the final changelog — no working shown." },
-        { id: "ambiguity", w: 3, label: "When the request is under-specified, should it ask a clarifying question or assume-and-note? Give the rule.",
+        { id: "ambiguity", w: 3, qs: true,
+          qsHint: "Decide once — ask a clarifying question, or assume and flag it. Otherwise the model guesses silently.",
+          label: "When the request is under-specified, should it ask a clarifying question or assume-and-note? Give the rule.",
           help: "A concrete threshold beats “use judgement”.",
           ph: "This runs unattended, so never ask. If a PR's effect is unclear, include it under its best-guess group and add “(unverified)” to that line." },
         { id: "precedence", w: 2, label: "If instructions conflict — this spec vs. the user vs. the input — what takes precedence?",
@@ -972,6 +1027,9 @@
   }
   function sectionQuestions(s) {
     return s.questions.filter(function (q) {
+      // Quick-shot is a curated subset: only questions flagged qs:true, in
+      // whichever sections hold them. Ignores the per-type `t` list.
+      if (state.buildType === "quickshot") return q.qs === true;
       return !q.t || q.t.indexOf(state.buildType) !== -1;
     });
   }
@@ -1116,6 +1174,11 @@
       }));
       field.appendChild(lab);
       field.appendChild(el("div", { class: "help", text: q.help }));
+      if (state.buildType === "quickshot" && q.qsHint) {
+        field.appendChild(el("div", { class: "qs-hint" }, [
+          el("b", { text: "Pitfall" }), q.qsHint
+        ]));
+      }
 
       var seeded = state.answers[q.id];
       if (seeded == null && q.seed) seeded = q.seed;
@@ -1262,7 +1325,7 @@
         ans("always_do") && ("Always:\n" + listify("always_do")),
         ans("never_do") && ("Never:\n" + listify("never_do"))
       )]);
-    } else if (t === "task") {
+    } else if (t === "task" || t === "quickshot") {
       blocks.push(["Task", lines(
         ans("transform_steps") && ("Perform this transformation, following the steps literally:\n" + listify("transform_steps")),
         ans("rules_of_thumb") && ("Judgement calls: " + ans("rules_of_thumb"))
@@ -1461,6 +1524,15 @@
         "Fill the remaining recommended fields for extra precision, or export as is." }));
     }
     body.appendChild(gbox);
+
+    if (state.buildType === "quickshot") {
+      var pc = el("div", { class: "precheck" });
+      pc.appendChild(el("h3", { text: "Before you paste this — 30-second self-check" }));
+      var pcul = el("ul");
+      PRINCIPLES.forEach(function (p) { pcul.appendChild(el("li", { text: p })); });
+      pc.appendChild(pcul);
+      body.appendChild(pc);
+    }
 
     var text = modalTab === "prompt" ? generatePrompt(modalFmt) : generateSpec();
 
